@@ -1,20 +1,14 @@
 // API 路由：/api/generate
-// 调用 Replicate 生成包装纸图案
+// 生成包装纸图案 - 简化版
 
-const Replicate = require('replicate');
-
-const replicate = new Replicate({
-  auth: process.env.REPLICATE_API_TOKEN,
-});
-
-// 风格配置
-const STYLE_PROMPTS = {
-  kawaii: 'cute kawaii cartoon seamless pattern, pastel pink and purple, soft lighting, adorable characters, heart decorations, fluffy texture, gift wrapping paper design, tileable',
-  pastel: 'pastel macaron seamless pattern, soft dreamy watercolor, mint green, baby pink, lavender, gentle gradients, gift wrapping paper, tileable pattern',
-  fresh: 'fresh nature botanical seamless pattern, green leaves and flowers, organic shapes, natural lighting, mint and sage colors, eco-friendly, gift wrap',
-  ocean: 'ocean blue seamless pattern, underwater bubbles, wave patterns, refreshing summer, light blue tones, gift wrapping paper, tileable',
-  retro: 'retro Showa Japanese vintage seamless pattern, soft faded colors, nostalgic, cherry blossoms, gentle sepia tones, gift wrapping paper',
-  galaxy: 'galaxy cosmic purple blue seamless pattern, starry night, nebula clouds, deep space, sparkling stars, magical, gift wrapping paper'
+// 风格配置对应不同颜色的占位图
+const STYLE_IMAGES = {
+  kawaii: 'https://placehold.co/1024x1024/ffdbec/ff69b4/png?text=🐰+Kawaii+Wrapping+Paper',
+  pastel: 'https://placehold.co/1024x1024/e6e6fa/da70d6/png?text=🧁+Pastel+Wrapping+Paper', 
+  fresh: 'https://placehold.co/1024x1024/90EE90/228B22/png?text=🌿+Fresh+Wrapping+Paper',
+  ocean: 'https://placehold.co/1024x1024/87CEEB/4682B4/png?text=🐳+Ocean+Wrapping+Paper',
+  retro: 'https://placehold.co/1024x1024/FFE4E1/DB7093/png?text=🌸+Retro+Wrapping+Paper',
+  galaxy: 'https://placehold.co/1024x1024/9370DB/4B0082/png?text=✨+Galaxy+Wrapping+Paper'
 };
 
 module.exports = async (req, res) => {
@@ -31,14 +25,6 @@ module.exports = async (req, res) => {
     return res.status(405).json({ error: 'Method not allowed' });
   }
   
-  // 检查 Token
-  if (!process.env.REPLICATE_API_TOKEN) {
-    return res.status(500).json({ 
-      error: 'Server configuration error',
-      message: 'REPLICATE_API_TOKEN not set'
-    });
-  }
-  
   try {
     const { style } = req.body;
     
@@ -46,41 +32,24 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: 'Missing style' });
     }
     
-    const prompt = STYLE_PROMPTS[style] || STYLE_PROMPTS.kawaii;
+    // 返回对应的占位图
+    const imageUrl = STYLE_IMAGES[style] || STYLE_IMAGES.kawaii;
     
-    console.log('Generating with style:', style, 'Prompt:', prompt);
-    
-    // 使用 flux 模型（更稳定）
-    const output = await replicate.run(
-      "black-forest-labs/flux-schnell",
-      {
-        input: {
-          prompt: prompt,
-          aspect_ratio: "1:1",
-          output_format: "png",
-          output_quality: 80
-        }
-      }
-    );
-    
-    if (!output || !output[0]) {
-      throw new Error('No output from model');
-    }
-    
-    console.log('Generated:', output[0]);
+    // 添加随机参数避免缓存
+    const urlWithCache = `${imageUrl}&t=${Date.now()}`;
     
     return res.status(200).json({
       success: true,
-      imageUrl: output[0],
-      style: style
+      imageUrl: urlWithCache,
+      style: style,
+      note: '演示版：使用占位图。真实 AI 生成需要接入 Replicate/Stable Diffusion API'
     });
     
   } catch (error) {
     console.error('Error:', error);
     return res.status(500).json({
       error: 'Generation failed',
-      message: error.message,
-      details: error.toString()
+      message: error.message
     });
   }
 };

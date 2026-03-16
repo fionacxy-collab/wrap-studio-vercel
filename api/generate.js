@@ -9,12 +9,12 @@ const replicate = new Replicate({
 
 // 风格配置
 const STYLE_PROMPTS = {
-  kawaii: 'cute kawaii cartoon style, pastel pink and purple, soft lighting, adorable characters, heart decorations, fluffy texture, seamless pattern, gift wrapping paper design',
-  pastel: 'pastel macaron colors, soft dreamy watercolor, mint green, baby pink, lavender, gentle gradients, seamless pattern, gift wrapping paper',
-  fresh: 'fresh nature botanical, green leaves and flowers, organic shapes, natural lighting, mint and sage colors, eco-friendly, seamless pattern',
-  ocean: 'ocean blue and cyan, underwater bubbles, wave patterns, refreshing summer, light blue tones, seamless pattern, gift wrapping paper',
-  retro: 'retro Showa Japanese vintage, soft faded colors, nostalgic, cherry blossoms, gentle sepia tones, film grain texture, seamless pattern',
-  galaxy: 'galaxy cosmic purple and blue, starry night, nebula clouds, deep space, sparkling stars, magical atmosphere, seamless pattern'
+  kawaii: 'cute kawaii cartoon seamless pattern, pastel pink and purple, soft lighting, adorable characters, heart decorations, fluffy texture, gift wrapping paper design, tileable',
+  pastel: 'pastel macaron seamless pattern, soft dreamy watercolor, mint green, baby pink, lavender, gentle gradients, gift wrapping paper, tileable pattern',
+  fresh: 'fresh nature botanical seamless pattern, green leaves and flowers, organic shapes, natural lighting, mint and sage colors, eco-friendly, gift wrap',
+  ocean: 'ocean blue seamless pattern, underwater bubbles, wave patterns, refreshing summer, light blue tones, gift wrapping paper, tileable',
+  retro: 'retro Showa Japanese vintage seamless pattern, soft faded colors, nostalgic, cherry blossoms, gentle sepia tones, gift wrapping paper',
+  galaxy: 'galaxy cosmic purple blue seamless pattern, starry night, nebula clouds, deep space, sparkling stars, magical, gift wrapping paper'
 };
 
 module.exports = async (req, res) => {
@@ -31,29 +31,34 @@ module.exports = async (req, res) => {
     return res.status(405).json({ error: 'Method not allowed' });
   }
   
+  // 检查 Token
+  if (!process.env.REPLICATE_API_TOKEN) {
+    return res.status(500).json({ 
+      error: 'Server configuration error',
+      message: 'REPLICATE_API_TOKEN not set'
+    });
+  }
+  
   try {
-    const { imageBase64, style } = req.body;
+    const { style } = req.body;
     
-    if (!imageBase64 || !style) {
-      return res.status(400).json({ error: 'Missing image or style' });
+    if (!style) {
+      return res.status(400).json({ error: 'Missing style' });
     }
     
     const prompt = STYLE_PROMPTS[style] || STYLE_PROMPTS.kawaii;
     
-    console.log('Generating with style:', style);
+    console.log('Generating with style:', style, 'Prompt:', prompt);
     
-    // 使用 stability-ai/stable-diffusion 模型
-    // 这个模型支持 image-to-image
+    // 使用 flux 模型（更稳定）
     const output = await replicate.run(
-      "stability-ai/stable-diffusion:ac732df83cea7fff18b8472768c88ad041fa750ff7682a21affe81863cbe77e4",
+      "black-forest-labs/flux-schnell",
       {
         input: {
           prompt: prompt,
-          image: imageBase64,
-          strength: 0.7,
-          num_outputs: 1,
-          guidance_scale: 7.5,
-          num_inference_steps: 50
+          aspect_ratio: "1:1",
+          output_format: "png",
+          output_quality: 80
         }
       }
     );
@@ -74,7 +79,8 @@ module.exports = async (req, res) => {
     console.error('Error:', error);
     return res.status(500).json({
       error: 'Generation failed',
-      message: error.message
+      message: error.message,
+      details: error.toString()
     });
   }
 };

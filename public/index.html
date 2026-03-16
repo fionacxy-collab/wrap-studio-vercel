@@ -120,7 +120,7 @@
             };
             
             const handleGenerate = async () => {
-                if (!image || !selectedStyle) return;
+                if (!selectedStyle) return;
                 
                 setLoading(true);
                 setError(null);
@@ -131,7 +131,6 @@
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            imageBase64: image,
                             style: selectedStyle.id
                         })
                     });

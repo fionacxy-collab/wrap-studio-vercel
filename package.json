@@ -1,0 +1,15 @@
+{
+  "name": "wrap-studio",
+  "version": "1.0.0",
+  "description": "AI 礼品包装纸生成器",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {
+    "replicate": "^0.25.2"
+  },
+  "devDependencies": {
+    "vercel": "^33.0.0"
+  }
+}
